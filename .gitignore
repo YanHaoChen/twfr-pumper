@@ -1,0 +1,5 @@
+.DS_Store
+macvenv/
+.idea
+*.pyc
+__pycache__/
