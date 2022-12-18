@@ -1,6 +1,7 @@
 import requests
 import logging
-
+from os.path import exists, isdir, join
+from os import mkdir
 from bs4 import BeautifulSoup
 
 from twfr_pumper.reports.financial_reports.sheet import Sheet
@@ -14,17 +15,31 @@ class FinancialReportAgent(object):
             company_id: str,
             year: int,
             season: int,
-            report_type: str
+            report_type: str,
+            file_path="./tmp/"
     ):
+        content = None
         try:
-            resp = requests.get(
-                f'https://mops.twse.com.tw/server-java/t164sb01?step=1&'
-                f'CO_ID={company_id}&'
-                f'SYEAR={year}&'
-                f'SSEASON={season}&'
-                f'REPORT_ID={report_type}')
-            resp.encoding = 'big5'
-            soup = BeautifulSoup(resp.text, 'html.parser')
+            if not (exists(file_path) and isdir(file_path)):
+                mkdir(file_path)
+
+            report_file_name = join(file_path, f'{company_id}_{report_type}_{year}_{season}.html')
+            if exists(report_file_name):
+                with open(report_file_name, 'r') as f:
+                    content = f.read()
+            else:
+                resp = requests.get(
+                    f'https://mops.twse.com.tw/server-java/t164sb01?step=1&'
+                    f'CO_ID={company_id}&'
+                    f'SYEAR={year}&'
+                    f'SSEASON={season}&'
+                    f'REPORT_ID={report_type}')
+                resp.encoding = 'big5'
+                content = resp.text
+                with open(report_file_name, 'w') as f:
+                    f.write(content)
+
+            soup = BeautifulSoup(content, 'html.parser')
 
             check_status = soup.find('h4')
             if check_status and check_status.string == '檔案不存在!':

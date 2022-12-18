@@ -6,13 +6,26 @@ class FRPool(object):
         self.__agents = []
         self.reports = {}
 
-    def add(self, agent: FinancialReportAgent):
+    def add_agent(self, agent: FinancialReportAgent):
         self.__agents.append(agent)
+
+    def add_range_reports(self, stock_id: str, report_type: str, start_y: int, start_s: int, end_y: int, end_s: int):
+        start_y_s = start_y * 10 + start_s
+        end_y_s = end_y * 10 + end_s
+        while start_y_s <= end_y_s:
+            self.add_agent(FinancialReportAgent(stock_id, start_y, start_s, report_type))
+            start_s += 1
+            if start_s == 5:
+                start_s = 1
+                start_y += 1
+
+            start_y_s = start_y * 10 + start_s
 
     def organize_reports(self):
         for agent in self.__agents:
             year_season = agent.year * 10 + agent.season
-            self.reports.get(agent.company_id, {}).setdefault(year_season, {'B': None, 'CI': None})
+            self.reports.setdefault(agent.company_id, {})
+            self.reports[agent.company_id].setdefault(year_season, {'B': None, 'CI': None})
             self.reports[agent.company_id][year_season]['B'] = agent.balance_sheet.dict_format
             self.reports[agent.company_id][year_season]['CI'] = agent.comprehensive_income_sheet.dict_format
 
@@ -40,13 +53,6 @@ class FRPool(object):
 
 
 if __name__ == '__main__':
+
     pool = FRPool()
-    pool.add(FinancialReportAgent("2605", 2022, 3, "C"))
-    pool.add(FinancialReportAgent("2605", 2022, 2, "C"))
-    pool.add(FinancialReportAgent("2605", 2022, 1, "C"))
-    pool.add(FinancialReportAgent("2605", 2021, 4, "C"))
-    pool.add(FinancialReportAgent("2605", 2021, 3, "C"))
-    pool.add(FinancialReportAgent("5283", 2022, 3, "C"))
-    pool.add(FinancialReportAgent("5283", 2021, 2, "C"))
-    pool.add(FinancialReportAgent("5283", 2021, 1, "C"))
-    print(pool.organize_reports())
+    pool.add_range_reports("2605", "C", 2020, 1, 2022, 3)
