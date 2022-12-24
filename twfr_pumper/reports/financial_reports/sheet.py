@@ -32,10 +32,11 @@ class Sheet(abc.ABC):
                 result[code] = {
                     'zh': zh_td_span.string.strip(),
                     'en': en_td_span.string.strip(),
+                    'values': []
                 }
                 for idx, value_td in enumerate(siblings_tds[1:]):
                     value = value_td.find('ix:nonfraction').string.strip()
-                    result[code].update({f'value{idx}': self.to_number(value)})
+                    result[code]['values'].append(self.to_number(value))
 
         return result
 
