@@ -1,10 +1,31 @@
 from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
+import pandas as pd
 
 
 class FRPool(object):
     def __init__(self):
         self.__agents = []
         self.reports = {}
+        self.report_df = None
+
+    def __cal_metrics(self):
+        arr_for_df = []
+        for code, reports in self.reports.items():
+            for y_and_s, report in reports.items():
+                self.__cal_roa_and_roe(y_and_s, reports, report)
+                self.__cal_inventory_turnover(y_and_s, reports, report)
+
+                for item, object_ in report.items():
+                    arr_for_df.append({
+                        'code': code,
+                        'y_and_s': str(y_and_s),
+                        'item': item,
+                        'zh': object_['zh'],
+                        'en': object_['en'],
+                        'value': object_['values'][0]
+                    })
+
+        self.report_df = pd.DataFrame(arr_for_df)
 
     def add_agent(self, agent: FinancialReportAgent):
         self.__agents.append(agent)
@@ -21,22 +42,17 @@ class FRPool(object):
 
             start_y_s = start_y * 10 + start_s
 
-    def organize_reports(self):
+    def organize_reports(self) -> None:
         for agent in self.__agents:
             year_season = agent.year * 10 + agent.season
             self.reports.setdefault(agent.company_id, {})
-            self.reports[agent.company_id].setdefault(year_season, {'B': None, 'CI': None})
-            self.reports[agent.company_id][year_season]['B'] = agent.balance_sheet.dict_format
-            self.reports[agent.company_id][year_season]['CI'] = agent.comprehensive_income_sheet.dict_format
+            self.reports[agent.company_id].update({year_season: agent.balance_sheet.dict_format})
+            self.reports[agent.company_id][year_season].update(agent.comprehensive_income_sheet.dict_format)
 
         self.__cal_metrics()
-        return self.reports
 
-    def __cal_metrics(self):
-        for code, reports in self.reports.items():
-            for y_and_s, report in reports.items():
-                self.__cal_roa_and_roe(y_and_s, reports, report)
-                self.__cal_inventory_turnover(y_and_s, reports, report)
+    def draw(self, items):
+        pass
 
     @staticmethod
     def __cal_roa_and_roe(y_and_s, reports, report):
@@ -45,16 +61,27 @@ class FRPool(object):
             if ex_y_and_s not in reports.keys():
                 return
             ex_report = reports[ex_y_and_s]
-            ex_profit = ex_report['CI']['8200']['values'][2]
-            s_profit = report['CI']['8200']['values'][0] - ex_profit
+            ex_profit = ex_report['8200']['values'][2]
+            s_profit = report['8200']['values'][0] - ex_profit
         else:
-            s_profit = report['CI']['8200']['values'][0]
+            s_profit = report['8200']['values'][0]
 
-        s_total_asset = report['B']['1XXX']['values'][0]
-        s_total_equity = report['B']['3XXX']['values'][0]
+        s_total_asset = report['1XXX']['values'][0]
+        s_total_equity = report['3XXX']['values'][0]
         s_roa = round(s_profit / s_total_asset * 100, 2)
         s_roe = round(s_profit / s_total_equity * 100, 2)
-        report.update({'s_roa': s_roa, 's_roe': s_roe})
+        report.update({
+            's_roa': {
+                'zh': 's_roa',
+                'en': 's_roa',
+                'values': [s_roa]
+            },
+            's_roe': {
+                'zh': 's_roe',
+                'en': 's_roe',
+                'values': [s_roe]
+            }
+        })
 
     @staticmethod
     def __cal_inventory_turnover(y_and_s, reports, report):
@@ -63,31 +90,36 @@ class FRPool(object):
             return
 
         ex_s_report = reports[ex_y_and_s]
-        curr_inventories = report['B']['130X']['values'][0]
-        ex_s_curr_inv = ex_s_report['B']['130X']['values'][0]
+        curr_inventories = report['130X']['values'][0]
+        ex_s_curr_inv = ex_s_report['130X']['values'][0]
         avg_inv = (curr_inventories + ex_s_curr_inv) / 2
 
         if y_and_s % 10 == 4:
-            curr_toc = report['CI']['5000']['values'][0]
-            ex_s_acc_toc = ex_s_report['CI']['5000']['values'][2]
+            curr_toc = report['5000']['values'][0]
+            ex_s_acc_toc = ex_s_report['5000']['values'][2]
             s_total_operating_costs = curr_toc - ex_s_acc_toc
         else:
-            s_total_operating_costs = report['CI']['5000']['values'][0]
+            s_total_operating_costs = report['5000']['values'][0]
 
         s_it = round(s_total_operating_costs / avg_inv, 2)
-        s_it_day = round(90 / s_it, 2)
-        report.update({'s_it': s_it, 's_it_days': s_it_day})
+        s_it_days = round(90 / s_it, 2)
+        report.update({
+            's_it': {
+                'zh': 's_it',
+                'en': 's_it',
+                'values': [s_it]
+            },
+            's_it_days': {
+                'zh': 's_it_days',
+                'en': 's_it_days',
+                'values': [s_it_days]
+            }
+        })
 
 
 if __name__ == '__main__':
     pool = FRPool()
     pool.add_range_reports("2605", "C", 2020, 1, 2022, 3)
     pool.organize_reports()
-    print(pool.reports['2605'][20223]['s_it_days'])
-    print(pool.reports['2605'][20222]['s_it_days'])
-    print(pool.reports['2605'][20221]['s_it_days'])
-    print(pool.reports['2605'][20214]['s_it_days'])
-    print(pool.reports['2605'][20213]['s_it_days'])
-    print(pool.reports['2605'][20204]['s_it_days'])
 
 
