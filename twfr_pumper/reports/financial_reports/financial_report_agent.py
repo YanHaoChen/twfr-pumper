@@ -25,7 +25,7 @@ class FinancialReportAgent(object):
 
             report_file_name = join(file_path, f'{company_id}_{report_type}_{year}_{season}.html')
             if exists(report_file_name):
-                with open(report_file_name, 'r') as f:
+                with open(report_file_name, 'r', encoding='big5') as f:
                     content = f.read()
             else:
                 resp = requests.get(
@@ -36,15 +36,14 @@ class FinancialReportAgent(object):
                     f'REPORT_ID={report_type}')
                 resp.encoding = 'big5'
                 content = resp.text
-                with open(report_file_name, 'w') as f:
-                    f.write(content)
 
             soup = BeautifulSoup(content, 'html.parser')
-
             check_status = soup.find('h4')
             if check_status and check_status.string == '檔案不存在!':
                 return None
             else:
+                with open(report_file_name, 'w', encoding='big5') as f:
+                    f.write(content)
                 instance = super(FinancialReportAgent, cls).__new__(cls)
                 instance.__dict__['soup'] = soup
                 return instance

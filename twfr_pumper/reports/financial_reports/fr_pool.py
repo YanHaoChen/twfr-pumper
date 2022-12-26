@@ -1,5 +1,7 @@
 from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
 import pandas as pd
+import time
+import random
 
 
 class FRPool(object):
@@ -28,13 +30,14 @@ class FRPool(object):
         self.report_df = pd.DataFrame(arr_for_df)
 
     def add_agent(self, agent: FinancialReportAgent):
-        self.__agents.append(agent)
+        self.__agents.append(agent) if agent else None
 
     def add_range_reports(self, stock_id: str, report_type: str, start_y: int, start_s: int, end_y: int, end_s: int):
         start_y_s = start_y * 10 + start_s
         end_y_s = end_y * 10 + end_s
         while start_y_s <= end_y_s:
             self.add_agent(FinancialReportAgent(stock_id, start_y, start_s, report_type))
+            time.sleep(random.randint(1, 2))
             start_s += 1
             if start_s == 5:
                 start_s = 1
