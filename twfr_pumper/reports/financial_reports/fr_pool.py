@@ -16,17 +16,7 @@ class FRPool(object):
             for y_and_s, report in reports.items():
                 self.__cal_roa_and_roe(y_and_s, reports, report)
                 self.__cal_inventory_turnover(y_and_s, reports, report)
-
-                for item, object_ in report.items():
-                    arr_for_df.append({
-                        'code': code,
-                        'y_and_s': str(y_and_s),
-                        'item': item,
-                        'zh': object_['zh'],
-                        'en': object_['en'],
-                        'value': object_['values'][0]
-                    })
-
+                self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
         self.report_df = pd.DataFrame(arr_for_df)
 
     def add_agent(self, agent: FinancialReportAgent):
@@ -58,10 +48,56 @@ class FRPool(object):
         pass
 
     @staticmethod
+    def __prepare_df_arr(code, y_and_s, reports, report, arr_for_df):
+        str_y_and_s = str(y_and_s)
+        if y_and_s % 10 == 4:
+            ex_report = reports.get(y_and_s - 1, None)
+            for item, object_ in report.items():
+                zh = object_['zh']
+                en = object_['en']
+                if '4000' <= item <= '9850':
+                    if ex_report and item in ex_report:
+                        arr_for_df.append({
+                            'code': code,
+                            'y_and_s': str_y_and_s,
+                            'item': item,
+                            'zh': zh,
+                            'en': en,
+                            'value': object_['values'][0] - ex_report[item]['values'][2]
+                        })
+                    arr_for_df.append({
+                        'code': code,
+                        'y_and_s': str_y_and_s,
+                        'item': f'y_{item}',
+                        'zh': zh,
+                        'en': en,
+                        'value': object_['values'][0]
+                    })
+                else:
+                    arr_for_df.append({
+                        'code': code,
+                        'y_and_s': str_y_and_s,
+                        'item': item,
+                        'zh': zh,
+                        'en': en,
+                        'value': object_['values'][0]
+                    })
+        else:
+            for item, object_ in report.items():
+                arr_for_df.append({
+                    'code': code,
+                    'y_and_s': str_y_and_s,
+                    'item': item,
+                    'zh': zh,
+                    'en': en,
+                    'value': object_['values'][0]
+                })
+
+    @staticmethod
     def __cal_roa_and_roe(y_and_s, reports, report):
         if y_and_s % 10 == 4:  # season 4
             ex_y_and_s = y_and_s - 1
-            if ex_y_and_s not in reports.keys():
+            if ex_y_and_s not in reports:
                 return
             ex_report = reports[ex_y_and_s]
             ex_profit = ex_report['8200']['values'][2]
