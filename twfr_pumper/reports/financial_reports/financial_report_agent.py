@@ -2,6 +2,9 @@ import requests
 import logging
 from os.path import exists, isdir, join
 from os import mkdir
+import time
+import random
+
 from bs4 import BeautifulSoup
 
 from twfr_pumper.reports.financial_reports.sheet import Sheet
@@ -16,9 +19,10 @@ class FinancialReportAgent(object):
             year: int,
             season: int,
             report_type: str,
+            delay_initial=1,
+            delay_max=3,
             file_path="./tmp/"
     ):
-        content = None
         try:
             if not (exists(file_path) and isdir(file_path)):
                 mkdir(file_path)
@@ -27,6 +31,8 @@ class FinancialReportAgent(object):
             if exists(report_file_name):
                 with open(report_file_name, 'r', encoding='big5') as f:
                     content = f.read()
+                    soup = BeautifulSoup(content, 'html.parser')
+                    company_name = soup.find('ix:nonnumeric').find_next_sibling('ix:nonnumeric')
             else:
                 resp = requests.get(
                     f'https://mops.twse.com.tw/server-java/t164sb01?step=1&'
@@ -36,17 +42,22 @@ class FinancialReportAgent(object):
                     f'REPORT_ID={report_type}')
                 resp.encoding = 'big5'
                 content = resp.text
+                time.sleep(random.randint(delay_initial, delay_max))
+                soup = BeautifulSoup(content, 'html.parser')
+                company_name = soup.find('ix:nonnumeric').find_next_sibling('ix:nonnumeric')
 
-            soup = BeautifulSoup(content, 'html.parser')
-            check_status = soup.find('h4')
-            if check_status and check_status.string == '檔案不存在!':
-                return None
-            else:
-                with open(report_file_name, 'w', encoding='big5') as f:
-                    f.write(content)
-                instance = super(FinancialReportAgent, cls).__new__(cls)
-                instance.__dict__['soup'] = soup
-                return instance
+                if company_name:
+                    with open(report_file_name, 'w', encoding='big5') as f:
+                        f.write(content)
+                else:
+                    logging.warning(f"Can't get the report: {report_file_name}")
+                    return None
+
+            instance = super(FinancialReportAgent, cls).__new__(cls)
+            instance.__dict__['soup'] = soup
+            instance.__dict__['company_name'] = company_name.text
+            return instance
+
         except Exception as e:
             logging.exception(e)
 

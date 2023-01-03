@@ -1,7 +1,6 @@
 from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
 import pandas as pd
-import time
-import random
+import plotly.express as px
 
 
 class FRPool(object):
@@ -9,6 +8,7 @@ class FRPool(object):
         self.__agents = []
         self.reports = {}
         self.report_df = None
+        self.name_mapping = {}
 
     def __cal_metrics(self):
         arr_for_df = []
@@ -19,15 +19,69 @@ class FRPool(object):
                 self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
         self.report_df = pd.DataFrame(arr_for_df)
 
+    def __prepare_df_arr(self, code, y_and_s, reports, report, arr_for_df):
+        str_y_and_s = str(y_and_s)
+        company_name = self.name_mapping[code]
+        if y_and_s % 10 == 4:
+            ex_report = reports.get(y_and_s - 1, None)
+            for item, object_ in report.items():
+                zh = object_['zh']
+                en = object_['en']
+                if '4000' <= item <= '9850':
+                    if ex_report and item in ex_report:
+                        arr_for_df.append({
+                            'code': code,
+                            'company_name': company_name,
+                            'y_and_s': str_y_and_s,
+                            'item': item,
+                            'zh': zh,
+                            'en': en,
+                            'value': object_['values'][0] - ex_report[item]['values'][2]
+                        })
+                    arr_for_df.append({
+                        'code': code,
+                        'company_name': company_name,
+                        'y_and_s': str_y_and_s,
+                        'item': f'y_{item}',
+                        'zh': zh,
+                        'en': en,
+                        'value': object_['values'][0]
+                    })
+                else:
+                    arr_for_df.append({
+                        'code': code,
+                        'company_name': company_name,
+                        'y_and_s': str_y_and_s,
+                        'item': item,
+                        'zh': zh,
+                        'en': en,
+                        'value': object_['values'][0]
+                    })
+        else:
+            for item, object_ in report.items():
+                zh = object_['zh']
+                en = object_['en']
+                arr_for_df.append({
+                    'code': code,
+                    'company_name': company_name,
+                    'y_and_s': str_y_and_s,
+                    'item': item,
+                    'zh': zh,
+                    'en': en,
+                    'value': object_['values'][0]
+                })
+
     def add_agent(self, agent: FinancialReportAgent):
-        self.__agents.append(agent) if agent else None
+        if agent:
+            self.__agents.append(agent)
+            if agent.company_id not in self.name_mapping:
+                self.name_mapping.update({agent.company_id: agent.company_name})
 
     def add_range_reports(self, stock_id: str, report_type: str, start_y: int, start_s: int, end_y: int, end_s: int):
         start_y_s = start_y * 10 + start_s
         end_y_s = end_y * 10 + end_s
         while start_y_s <= end_y_s:
             self.add_agent(FinancialReportAgent(stock_id, start_y, start_s, report_type))
-            time.sleep(random.randint(1, 2))
             start_s += 1
             if start_s == 5:
                 start_s = 1
@@ -44,54 +98,10 @@ class FRPool(object):
 
         self.__cal_metrics()
 
-    def draw(self, items):
-        pass
-
-    @staticmethod
-    def __prepare_df_arr(code, y_and_s, reports, report, arr_for_df):
-        str_y_and_s = str(y_and_s)
-        if y_and_s % 10 == 4:
-            ex_report = reports.get(y_and_s - 1, None)
-            for item, object_ in report.items():
-                zh = object_['zh']
-                en = object_['en']
-                if '4000' <= item <= '9850':
-                    if ex_report and item in ex_report:
-                        arr_for_df.append({
-                            'code': code,
-                            'y_and_s': str_y_and_s,
-                            'item': item,
-                            'zh': zh,
-                            'en': en,
-                            'value': object_['values'][0] - ex_report[item]['values'][2]
-                        })
-                    arr_for_df.append({
-                        'code': code,
-                        'y_and_s': str_y_and_s,
-                        'item': f'y_{item}',
-                        'zh': zh,
-                        'en': en,
-                        'value': object_['values'][0]
-                    })
-                else:
-                    arr_for_df.append({
-                        'code': code,
-                        'y_and_s': str_y_and_s,
-                        'item': item,
-                        'zh': zh,
-                        'en': en,
-                        'value': object_['values'][0]
-                    })
-        else:
-            for item, object_ in report.items():
-                arr_for_df.append({
-                    'code': code,
-                    'y_and_s': str_y_and_s,
-                    'item': item,
-                    'zh': zh,
-                    'en': en,
-                    'value': object_['values'][0]
-                })
+    def draw(self, item):
+        item_df = self.report_df[(self.report_df.item == item)]
+        fig = px.line(item_df, x='y_and_s', y='value', color='company_name', title=item)
+        fig.show()
 
     @staticmethod
     def __cal_roa_and_roe(y_and_s, reports, report):
