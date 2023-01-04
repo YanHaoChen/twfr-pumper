@@ -5,7 +5,7 @@ import plotly.express as px
 
 class FRPool(object):
     def __init__(self):
-        self.__agents = []
+        self.__agents = set()
         self.reports = {}
         self.report_df = None
         self.name_mapping = {}
@@ -17,11 +17,12 @@ class FRPool(object):
                 self.__cal_roa_and_roe(y_and_s, reports, report)
                 self.__cal_inventory_turnover(y_and_s, reports, report)
                 self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
+                self.__cal_dbr(report)
         self.report_df = pd.DataFrame(arr_for_df)
 
     def __prepare_df_arr(self, code, y_and_s, reports, report, arr_for_df):
         str_y_and_s = str(y_and_s)
-        company_name = self.name_mapping[code]
+        company_name = f'{code}-{self.name_mapping[code]}'
         if y_and_s % 10 == 4:
             ex_report = reports.get(y_and_s - 1, None)
             for item, object_ in report.items():
@@ -73,7 +74,7 @@ class FRPool(object):
 
     def add_agent(self, agent: FinancialReportAgent):
         if agent:
-            self.__agents.append(agent)
+            self.__agents.add(agent)
             if agent.company_id not in self.name_mapping:
                 self.name_mapping.update({agent.company_id: agent.company_name})
 
@@ -104,6 +105,16 @@ class FRPool(object):
         fig.show()
 
     @staticmethod
+    def __cal_dbr(report):
+        report.update({
+            's_dbr': {
+                'zh': '負債比率',
+                'en': 'Debt Burden Ratio',
+                'values': [round((report['2XXX']['values'][0] / report['1XXX']['values'][0]) * 100, 2)]
+            }
+        })
+
+    @staticmethod
     def __cal_roa_and_roe(y_and_s, reports, report):
         if y_and_s % 10 == 4:  # season 4
             ex_y_and_s = y_and_s - 1
@@ -117,8 +128,8 @@ class FRPool(object):
 
         s_total_asset = report['1XXX']['values'][0]
         s_total_equity = report['3XXX']['values'][0]
-        s_roa = round(s_profit / s_total_asset * 100, 2)
-        s_roe = round(s_profit / s_total_equity * 100, 2)
+        s_roa = round((s_profit / s_total_asset) * 100, 2)
+        s_roe = round((s_profit / s_total_equity) * 100, 2)
         report.update({
             's_roa': {
                 'zh': 's_roa',

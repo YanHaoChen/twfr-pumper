@@ -78,6 +78,12 @@ class FinancialReportAgent(object):
         self.comprehensive_income_sheet = ComprehensiveIncomeSheet(self.tables[1])
         self.parse_sheet_unit(self.comprehensive_income_sheet, self.soup)
 
+    def __hash__(self):
+        return hash(f'{self.company_id}{self.year}{self.season}{self.report_type}')
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
     @staticmethod
     def parse_sheet_unit(sheet: Sheet, report_html: BeautifulSoup):
         unit_string = report_html.find(
