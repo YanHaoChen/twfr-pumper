@@ -2,20 +2,67 @@ import requests
 import io
 from os.path import exists, isdir, join
 from os import makedirs
+from datetime import date
+from enum import Enum
+from typing import Union
 
 import pandas as pd
 
 from twfr_pumper.toolbox.date_tool import DateTool
 
 
+class MarketType(Enum):
+    LISTED_STOCK = 0
+    OTC_MARKET = 1
+
+
+class MonthlyRevenueReport(object):
+    def __init__(self, year, month, report_df, market: MarketType):
+        self.year = year
+        self.month = month
+        self.report_df = report_df
+        self.market = market
+
+    def get_industry_list(self):
+        return self.report_df['產業別'].unique()
+
+    def get_company_list(self):
+        return self.report_df['公司名稱'].unique()
+
+    def get_industry_mapping(self, industry: str):
+        return self.report_df.loc[self.report_df['產業別'] == industry][['公司代號', '公司名稱']].values
+
+    def check_industry_by_code(self, code: Union[int, str]):
+        if isinstance(code, str):
+            code = int(code)
+        try:
+            return self.report_df.loc[self.report_df['公司代號'] == code]['產業別'].values[0]
+        except IndexError:
+            return None
+
+    def check_industry_by_name(self, name: str):
+        try:
+            return self.report_df.loc[self.report_df['公司名稱'] == name]['產業別'].values[0]
+        except IndexError:
+            return None
+
+
 class MonthlyRevenueAgent(object):
-    def __new__(cls, year, month, file_path="./tmp/monthly_revenue"):
+    FILE_PATH_MAPPING = {
+        MarketType.LISTED_STOCK: '/t21/sii/',
+        MarketType.OTC_MARKET: '/t21/otc/'
+    }
+
+    def __init__(self, file_folder="./tmp/monthly_revenue"):
+        self.file_folder = file_folder
+        self.today = date.today()
+        if not (exists(self.file_folder) and isdir(self.file_folder)):
+            makedirs(self.file_folder, exist_ok=True)
+
+    def get_report_df(self, year, month, market=MarketType.LISTED_STOCK):
         for_pd_csv = None
         tw_year = DateTool.to_tw_year(year)
-        if not (exists(file_path) and isdir(file_path)):
-            makedirs(file_path, exist_ok=True)
-
-        report_file_name = join(file_path, f'monthly_revenue_{year}_{month}.html')
+        report_file_name = join(self.file_folder, f'monthly_revenue_{year}_{month}.html')
 
         if exists(report_file_name):
             for_pd_csv = report_file_name
@@ -25,7 +72,7 @@ class MonthlyRevenueAgent(object):
                 data={
                     'step': '9',
                     'functionName': 'show_file2',
-                    'filePath': '/t21/sii/',
+                    'filePath': self.FILE_PATH_MAPPING[market],
                     'fileName': f't21sc03_{tw_year}_{month}.csv'
                 }
             )
@@ -38,9 +85,25 @@ class MonthlyRevenueAgent(object):
             else:
                 return None
 
-        monthly_revenue_df = pd.read_csv(for_pd_csv)
-        print(monthly_revenue_df['公司代號'])
+        return MonthlyRevenueReport(
+            year=year,
+            month=month,
+            report_df=pd.read_csv(for_pd_csv),
+            market=market
+        )
+
+    def get_last_month_report(self):
+        if self.today.month == 1:
+            year, mon = (self.today.year - 1, 12)
+        else:
+            year, mon = (self.today.year, self.today.month - 1)
+
+        return self.get_report_df(year, mon)
 
 
 if __name__ == "__main__":
-    MonthlyRevenueAgent(2022, 11)
+    mr_agent = MonthlyRevenueAgent()
+    y2022_m12_mr = mr_agent.get_last_month_report()
+    print(y2022_m12_mr.get_industry_mapping("食品工業"))
+    # print(y2022_m12_mr.head(1)['公司代號'])
+    # print(y2022_m12_mr.loc[y2022_m12_mr['公司代號'] == 1101])
