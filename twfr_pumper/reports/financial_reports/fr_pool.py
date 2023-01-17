@@ -16,8 +16,8 @@ class FRPool(object):
             for y_and_s, report in reports.items():
                 self.__cal_roa_and_roe(y_and_s, reports, report)
                 self.__cal_inventory_turnover(y_and_s, reports, report)
-                self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
                 self.__cal_dbr(report)
+                self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
         self.report_df = pd.DataFrame(arr_for_df)
 
     def __prepare_df_arr(self, code, y_and_s, reports, report, arr_for_df):
@@ -100,14 +100,18 @@ class FRPool(object):
         self.__cal_metrics()
 
     def draw(self, item):
-        item_df = self.report_df[(self.report_df.item == item)]
-        fig = px.line(item_df, x='y_and_s', y='value', color='company_name', title=item)
+        item_df = self.report_df[(self.report_df.item == item)].sort_values(by=['y_and_s'])
+        fig = px.line(item_df,
+                      x='y_and_s',
+                      y='value',
+                      color='company_name',
+                      title=item)
         fig.show()
 
     @staticmethod
     def __cal_dbr(report):
         report.update({
-            's_dbr': {
+            'dbr': {
                 'zh': '負債比率',
                 'en': 'Debt Burden Ratio',
                 'values': [round((report['2XXX']['values'][0] / report['1XXX']['values'][0]) * 100, 2)]

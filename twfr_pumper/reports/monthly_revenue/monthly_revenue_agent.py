@@ -24,15 +24,18 @@ class MonthlyRevenueReport(object):
         self.market = market
 
     def get_industry_list(self):
-        return self.report_df['產業別'].unique()
+        return self.report_df['產業別'].unique().tolist()
 
-    def get_company_list(self):
-        return self.report_df['公司名稱'].unique()
+    def get_company_name_list(self):
+        return self.report_df['公司名稱'].unique().tolist()
 
-    def get_industry_mapping(self, industry: str):
+    def get_company_list_by_industry(self, industry: str):
         return self.report_df.loc[self.report_df['產業別'] == industry][['公司代號', '公司名稱']].values
 
-    def check_industry_by_code(self, code: Union[int, str]):
+    def get_company_df_by_industry(self, industry: str):
+        return self.report_df.loc[self.report_df['產業別'] == industry]
+
+    def check_industry_by_code(self, code: Union[int, str]) -> Union[str, None]:
         if isinstance(code, str):
             code = int(code)
         try:
@@ -40,7 +43,7 @@ class MonthlyRevenueReport(object):
         except IndexError:
             return None
 
-    def check_industry_by_name(self, name: str):
+    def check_industry_by_name(self, name: str) -> Union[str, None]:
         try:
             return self.report_df.loc[self.report_df['公司名稱'] == name]['產業別'].values[0]
         except IndexError:
