@@ -1,18 +1,22 @@
 from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
+from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReport
+
+
 import pandas as pd
 import plotly.express as px
 
 
 class FRPool(object):
     def __init__(self):
-        self.__agents = set()
-        self.reports = {}
+        self.__agent = FinancialReportAgent()
+        self.reports = set()
+        self.organized_report = {}
         self.report_df = None
         self.name_mapping = {}
 
     def __cal_metrics(self):
         arr_for_df = []
-        for code, reports in self.reports.items():
+        for code, reports in self.organized_report.items():
             for y_and_s, report in reports.items():
                 self.__cal_roa_and_roe(y_and_s, reports, report)
                 self.__cal_inventory_turnover(y_and_s, reports, report)
@@ -30,6 +34,17 @@ class FRPool(object):
                 en = object_['en']
                 if '4000' <= item <= '9850':
                     if ex_report and item in ex_report:
+                        # For EPS
+                        if item == '9750':
+                            val_3100 = report['3100']['values'][0]
+                            val_8200 = report['8200']['values'][0] - ex_report['8200']['values'][2]
+                            value = val_8200 / (val_3100 / 10)
+                        elif item == '9850':
+                            val_3110 = report['3110']['values'][0]
+                            val_8200 = report['8200']['values'][0] - ex_report['8200']['values'][2]
+                            value = val_8200 / (val_3110 / 10)
+                        else:
+                            value = object_['values'][0] - ex_report[item]['values'][2]
                         arr_for_df.append({
                             'code': code,
                             'company_name': company_name,
@@ -37,7 +52,7 @@ class FRPool(object):
                             'item': item,
                             'zh': zh,
                             'en': en,
-                            'value': object_['values'][0] - ex_report[item]['values'][2]
+                            'value': value
                         })
                     arr_for_df.append({
                         'code': code,
@@ -72,17 +87,17 @@ class FRPool(object):
                     'value': object_['values'][0]
                 })
 
-    def add_agent(self, agent: FinancialReportAgent):
-        if agent:
-            self.__agents.add(agent)
-            if agent.company_id not in self.name_mapping:
-                self.name_mapping.update({agent.company_id: agent.company_name})
+    def add_report(self, report: FinancialReport):
+        if report:
+            self.reports.add(report)
+            if report.stock_id not in self.name_mapping:
+                self.name_mapping.update({report.stock_id: report.company_name})
 
     def add_range_reports(self, stock_id: str, report_type: str, start_y: int, start_s: int, end_y: int, end_s: int):
         start_y_s = start_y * 10 + start_s
         end_y_s = end_y * 10 + end_s
         while start_y_s <= end_y_s:
-            self.add_agent(FinancialReportAgent(stock_id, start_y, start_s, report_type))
+            self.add_report(self.__agent.get_report(stock_id, start_y, start_s, report_type))
             start_s += 1
             if start_s == 5:
                 start_s = 1
@@ -91,11 +106,11 @@ class FRPool(object):
             start_y_s = start_y * 10 + start_s
 
     def organize_reports(self) -> None:
-        for agent in self.__agents:
-            year_season = agent.year * 10 + agent.season
-            self.reports.setdefault(agent.company_id, {})
-            self.reports[agent.company_id].update({year_season: agent.balance_sheet.dict_format})
-            self.reports[agent.company_id][year_season].update(agent.comprehensive_income_sheet.dict_format)
+        for report in self.reports:
+            year_season = report.year * 10 + report.season
+            self.organized_report.setdefault(report.stock_id, {})
+            self.organized_report[report.stock_id].update({year_season: report.balance_sheet.dict_format})
+            self.organized_report[report.stock_id][year_season].update(report.ci_sheet.dict_format)
 
         self.__cal_metrics()
 

@@ -62,7 +62,7 @@ class MonthlyRevenueAgent(object):
         if not (exists(self.file_folder) and isdir(self.file_folder)):
             makedirs(self.file_folder, exist_ok=True)
 
-    def get_report_df(self, year, month, market=MarketType.LISTED_STOCK):
+    def get_report(self, year, month, market=MarketType.LISTED_STOCK):
         for_pd_csv = None
         tw_year = DateTool.to_tw_year(year)
         report_file_name = join(self.file_folder, f'monthly_revenue_{year}_{month}.html')
