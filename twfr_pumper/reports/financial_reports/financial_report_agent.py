@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from twfr_pumper.reports.financial_reports.sheet import Sheet
 from twfr_pumper.reports.financial_reports.balance_sheet import BalanceSheet
 from twfr_pumper.reports.financial_reports.comprehensive_income_sheet import ComprehensiveIncomeSheet
+from twfr_pumper.reports.financial_reports.statements_of_cash_flows import StatementsOfCashFlows
 
 
 class FinancialReport(object):
@@ -21,6 +22,7 @@ class FinancialReport(object):
                  report_type: str,
                  balance_sheet: BalanceSheet,
                  ci_sheet: ComprehensiveIncomeSheet,
+                 cash_flows: StatementsOfCashFlows,
                  soup: BeautifulSoup):
         self.stock_id = stock_id
         self.company_name = company_name
@@ -29,6 +31,7 @@ class FinancialReport(object):
         self.report_type = report_type
         self.balance_sheet = balance_sheet
         self.ci_sheet = ci_sheet
+        self.cash_flows = cash_flows
         self.soup = soup
 
     def __hash__(self):
@@ -77,8 +80,11 @@ class FinancialReportAgent(object):
         balance_table = soup.find('table')
         balance_sheet = BalanceSheet(balance_table)
         self.parse_sheet_unit(balance_sheet, soup)
-        ci_sheet = ComprehensiveIncomeSheet(balance_table.find_next_sibling('table'))
+        ci_table = balance_table.find_next_sibling('table')
+        ci_sheet = ComprehensiveIncomeSheet(ci_table)
         self.parse_sheet_unit(ci_sheet, soup)
+        cash_flows = StatementsOfCashFlows(ci_table.find_next_sibling('table'))
+        self.parse_sheet_unit(cash_flows, soup)
 
         return FinancialReport(
             stock_id=stock_id,
@@ -88,6 +94,7 @@ class FinancialReportAgent(object):
             report_type=report_type,
             balance_sheet=balance_sheet,
             ci_sheet=ci_sheet,
+            cash_flows=cash_flows,
             soup=soup
         )
 

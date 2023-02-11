@@ -1,9 +1,22 @@
+from dataclasses import dataclass, asdict
+
 from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
 from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReport
 
 
 import pandas as pd
 import plotly.express as px
+
+
+@dataclass
+class DFRecord:
+    code: str
+    company_name: str
+    y_and_s: str
+    item: str
+    zh: str
+    en: str
+    value: float = 0.0
 
 
 class FRPool(object):
@@ -24,68 +37,93 @@ class FRPool(object):
                 self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
         self.report_df = pd.DataFrame(arr_for_df)
 
-    def __prepare_df_arr(self, code, y_and_s, reports, report, arr_for_df):
+    @staticmethod
+    def __prepare_df_arr_for_balance_sheet(code, company_name, y_and_s, item, object_, arr_for_df):
         str_y_and_s = str(y_and_s)
-        company_name = f'{code}-{self.name_mapping[code]}'
+        zh = object_['zh']
+        en = object_['en']
+        record = DFRecord(
+            code=code,
+            company_name=company_name,
+            y_and_s=str_y_and_s,
+            item=item,
+            zh=zh,
+            en=en,
+            value=object_['values'][0]
+        )
+        arr_for_df.append(asdict(record))
+
+    @staticmethod
+    def __prepare_df_arr_for_ci_sheet(code, company_name, y_and_s, reports, report, item, object_, arr_for_df):
+        zh = object_['zh']
+        en = object_['en']
+        str_y_and_s = str(y_and_s)
+        record = DFRecord(
+            code=code,
+            company_name=company_name,
+            y_and_s=str_y_and_s,
+            item=item,
+            zh=zh,
+            en=en,
+            value=object_['values'][0]
+        )
         if y_and_s % 10 == 4:
             ex_report = reports.get(y_and_s - 1, None)
-            for item, object_ in report.items():
-                zh = object_['zh']
-                en = object_['en']
-                if '4000' <= item <= '9850':
-                    if ex_report and item in ex_report:
-                        # For EPS
-                        if item == '9750':
-                            val_3100 = report['3100']['values'][0]
-                            val_8200 = report['8200']['values'][0] - ex_report['8200']['values'][2]
-                            value = val_8200 / (val_3100 / 10)
-                        elif item == '9850':
-                            val_3110 = report['3110']['values'][0]
-                            val_8200 = report['8200']['values'][0] - ex_report['8200']['values'][2]
-                            value = val_8200 / (val_3110 / 10)
-                        else:
-                            value = object_['values'][0] - ex_report[item]['values'][2]
-                        arr_for_df.append({
-                            'code': code,
-                            'company_name': company_name,
-                            'y_and_s': str_y_and_s,
-                            'item': item,
-                            'zh': zh,
-                            'en': en,
-                            'value': value
-                        })
-                    arr_for_df.append({
-                        'code': code,
-                        'company_name': company_name,
-                        'y_and_s': str_y_and_s,
-                        'item': f'y_{item}',
-                        'zh': zh,
-                        'en': en,
-                        'value': object_['values'][0]
-                    })
+            if ex_report and item in ex_report:
+                # For EPS
+                if item == '9750':
+                    val_3100 = report['3100']['values'][0]
+                    val_8200 = report['8200']['values'][0] - ex_report['8200']['values'][2]
+                    value = val_8200 / (val_3100 / 10)
+                elif item == '9850':
+                    val_3110 = report['3110']['values'][0]
+                    val_8200 = report['8200']['values'][0] - ex_report['8200']['values'][2]
+                    value = val_8200 / (val_3110 / 10)
                 else:
-                    arr_for_df.append({
-                        'code': code,
-                        'company_name': company_name,
-                        'y_and_s': str_y_and_s,
-                        'item': item,
-                        'zh': zh,
-                        'en': en,
-                        'value': object_['values'][0]
-                    })
+                    value = object_['values'][0] - ex_report[item]['values'][2]
+                record.value = value
+                arr_for_df.append(asdict(record))
+            else:
+                record.item = f'y_{item}'
+                arr_for_df.append(asdict(record))
         else:
-            for item, object_ in report.items():
-                zh = object_['zh']
-                en = object_['en']
-                arr_for_df.append({
-                    'code': code,
-                    'company_name': company_name,
-                    'y_and_s': str_y_and_s,
-                    'item': item,
-                    'zh': zh,
-                    'en': en,
-                    'value': object_['values'][0]
-                })
+            arr_for_df.append(asdict(record))
+
+    @staticmethod
+    def __prepare_df_arr_for_cash_flows(code, company_name, y_and_s, reports, item, object_, arr_for_df):
+        zh = object_['zh']
+        en = object_['en']
+        str_y_and_s = str(y_and_s)
+        record = DFRecord(
+            code=code,
+            company_name=company_name,
+            y_and_s=str_y_and_s,
+            item=item,
+            zh=zh,
+            en=en,
+            value=object_['values'][0]
+        )
+        if y_and_s % 10 == 1:
+            arr_for_df.append(asdict(record))
+        else:
+            ex_report = reports.get(y_and_s - 1, None)
+            if ex_report and item in ex_report:
+                value = object_['values'][0] - ex_report[item]['values'][0]
+                record.value = value
+                arr_for_df.append(asdict(record))
+            else:
+                record.item = f'acc_{item}'
+                arr_for_df.append(asdict(record))
+
+    def __prepare_df_arr(self, code, y_and_s, reports, report, arr_for_df):
+        company_name = f'{code}-{self.name_mapping[code]}'
+        for item, object_ in report.items():
+            if '4000' < item:
+                self.__prepare_df_arr_for_balance_sheet(code, company_name, y_and_s, item, object_, arr_for_df)
+            elif '4000' <= item <= '9850':
+                self.__prepare_df_arr_for_ci_sheet(code, company_name, y_and_s, reports, report, item, object_, arr_for_df)
+            elif 'A00010' <= item <= 'E00210':
+                self.__prepare_df_arr_for_cash_flows(code, company_name, y_and_s, reports, item, object_, arr_for_df)
 
     def add_report(self, report: FinancialReport):
         if report:
@@ -111,6 +149,7 @@ class FRPool(object):
             self.organized_report.setdefault(report.stock_id, {})
             self.organized_report[report.stock_id].update({year_season: report.balance_sheet.dict_format})
             self.organized_report[report.stock_id][year_season].update(report.ci_sheet.dict_format)
+            self.organized_report[report.stock_id][year_season].update(report.cash_flows.dict_format)
 
         self.__cal_metrics()
 
@@ -185,12 +224,12 @@ class FRPool(object):
         report.update({
             's_it': {
                 'zh': 's_it',
-                'en': 's_it',
+                'en': 's_inventory_turnover',
                 'values': [s_it]
             },
             's_it_days': {
                 'zh': 's_it_days',
-                'en': 's_it_days',
+                'en': 's_inventory_turnover_days',
                 'values': [s_it_days]
             }
         })
