@@ -35,18 +35,19 @@ class Sheet(abc.ABC):
                     'values': []
                 }
                 for idx, value_td in enumerate(siblings_tds[1:]):
+                    sign = value_td.find('ix:nonfraction').get('sign')
                     value = value_td.find('ix:nonfraction').string.strip()
-                    result[code]['values'].append(self.to_number(value))
+                    result[code]['values'].append(self.to_number(value, sign))
 
         return result
 
     @staticmethod
-    def to_number(value: str):
+    def to_number(value: str, sign=None):
         number = value.replace(",", "")
-        if '(' in number:
-            return float(number[1:-1]) * -1.0
-        else:
-            return float(number)
+        if sign and sign == '-':
+            return float(number) * -1.0
+
+        return float(number)
 
     @staticmethod
     def sheet_str_to_number(result_dict: dict):

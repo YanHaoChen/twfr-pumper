@@ -153,13 +153,13 @@ class FRPool(object):
 
         self.__cal_metrics()
 
-    def draw(self, item):
+    def draw(self, item, title_lang='zh'):
         item_df = self.report_df[(self.report_df.item == item)].sort_values(by=['y_and_s'])
         fig = px.line(item_df,
                       x='y_and_s',
                       y='value',
                       color='company_name',
-                      title=item)
+                      title=item_df.iloc[0][title_lang])
         fig.show()
 
     @staticmethod
