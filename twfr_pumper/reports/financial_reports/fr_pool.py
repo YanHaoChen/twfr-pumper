@@ -1,11 +1,10 @@
 from dataclasses import dataclass, asdict
 
-from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
-from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReport
-
-
 import pandas as pd
 import plotly.express as px
+
+from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
+from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReport
 
 
 @dataclass
@@ -153,16 +152,31 @@ class FRPool(object):
 
         self.__cal_metrics()
 
-    def draw(self, item, title_lang='zh', adjust=0):
+    def draw(self, item, title_lang='zh', multiple=1, adjust=1):
 
         item_df = self.report_df[(self.report_df.item == item)].sort_values(by=['y_and_s'])
-        item_df['value'] *= adjust
+        item_df['value'] *= multiple
+        item_df['value'] += adjust
         fig = px.line(item_df,
                       x='y_and_s',
                       y='value',
                       color='company_name',
                       title=f'{item_df.iloc[0][title_lang]}, Adjust: {adjust}')
         fig.show()
+
+    def extend_item(self, *items, func, item_name, zh, en):
+        items_df = []
+        first_item_df = self.report_df[(self.report_df.item == items[0])]
+        for item in items:
+            items_df.append(self.report_df[(self.report_df.item == item)].sort_values(by=['y_and_s'])['value'].values)
+
+        result_values = func(*items_df)
+        new_item = first_item_df.copy()
+        new_item['item'] = [item_name] * result_values.size
+        new_item['zh'] = [zh] * result_values.size
+        new_item['en'] = [en] * result_values.size
+        new_item['value'] = result_values
+        self.report_df = self.report_df.append(new_item, ignore_index=True)
 
     @staticmethod
     def __cal_dbr(report):
