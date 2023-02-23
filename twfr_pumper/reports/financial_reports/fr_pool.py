@@ -1,4 +1,6 @@
 from dataclasses import dataclass, asdict
+from os import makedirs, path
+import logging
 
 import pandas as pd
 import plotly.express as px
@@ -26,7 +28,7 @@ class FRPool(object):
         self.report_df = None
         self.name_mapping = {}
 
-    def __cal_metrics(self):
+    def __cal_metrics_and_to_df(self):
         arr_for_df = []
         for code, reports in self.organized_report.items():
             for y_and_s, report in reports.items():
@@ -34,7 +36,12 @@ class FRPool(object):
                 self.__cal_inventory_turnover(y_and_s, reports, report)
                 self.__cal_dbr(report)
                 self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
-        self.report_df = pd.DataFrame(arr_for_df)
+
+        if self.report_df:
+            self.report_df = self.report_df.append(pd.DataFrame(arr_for_df), ignore_index=True)
+            self.report_df = self.report_df.drop_duplicates()
+        else:
+            self.report_df = pd.DataFrame(arr_for_df)
 
     @staticmethod
     def __prepare_df_arr_for_balance_sheet(code, company_name, y_and_s, item, object_, arr_for_df):
@@ -150,7 +157,24 @@ class FRPool(object):
             self.organized_report[report.stock_id][year_season].update(report.ci_sheet.dict_format)
             self.organized_report[report.stock_id][year_season].update(report.cash_flows.dict_format)
 
-        self.__cal_metrics()
+        self.__cal_metrics_and_to_df()
+
+    def save_as_csv(self, file_path):
+        folders = path.dirname()
+        makedirs(folders, exist_ok=True)
+        self.report_df.to_csv(file_path, index=False)
+
+    def load_csv(self, file_path: str):
+        if path.exists(file_path) and file_path.endswith('.csv'):
+            loaded_df = pd.read_csv()
+
+            if self.report_df:
+                self.report_df = self.report_df.append(pd.DataFrame(loaded_df), ignore_index=True)
+                self.report_df = self.report_df.drop_duplicates()
+            else:
+                self.report_df = pd.DataFrame(loaded_df)
+        else:
+            logging.error(f'{file_path} is not exist or not a csv.')
 
     def draw(self, item, title_lang='zh', multiple=1, adjust=1):
 
