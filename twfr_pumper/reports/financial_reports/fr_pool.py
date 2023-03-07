@@ -185,7 +185,7 @@ class FRPool(object):
                       x='y_and_s',
                       y='value',
                       color='company_name',
-                      title=f'{item_df.iloc[0][title_lang]}, Adjust: {adjust}')
+                      title=f'{item_df.iloc[0][title_lang]}, Adjust: {adjust}, Multiple: {multiple}')
         fig.show()
 
     def extend_item(self, *items, func, item_name, zh, en):
@@ -200,6 +200,9 @@ class FRPool(object):
         new_item['zh'] = [zh] * result_values.size
         new_item['en'] = [en] * result_values.size
         new_item['value'] = result_values
+        if self.report_df[(self.report_df.item == item_name)].size:
+            self.report_df = self.report_df.drop(self.report_df[self.report_df.item == item_name].index)
+
         self.report_df = self.report_df.append(new_item, ignore_index=True)
 
     @staticmethod
