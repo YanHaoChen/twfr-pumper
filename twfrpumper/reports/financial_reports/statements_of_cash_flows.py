@@ -1,4 +1,4 @@
-from twfr_pumper.reports.financial_reports.sheet import Sheet
+from twfrpumper.reports.financial_reports.sheet import Sheet
 from bs4 import BeautifulSoup
 
 

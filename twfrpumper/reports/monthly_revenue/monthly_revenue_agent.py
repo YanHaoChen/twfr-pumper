@@ -8,7 +8,7 @@ from typing import Union
 
 import pandas as pd
 
-from twfr_pumper.toolbox.date_tool import DateTool
+from twfrpumper.toolbox.date_tool import DateTool
 
 
 class MarketType(Enum):

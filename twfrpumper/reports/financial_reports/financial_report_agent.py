@@ -7,10 +7,10 @@ import random
 
 from bs4 import BeautifulSoup
 
-from twfr_pumper.reports.financial_reports.sheet import Sheet
-from twfr_pumper.reports.financial_reports.balance_sheet import BalanceSheet
-from twfr_pumper.reports.financial_reports.comprehensive_income_sheet import ComprehensiveIncomeSheet
-from twfr_pumper.reports.financial_reports.statements_of_cash_flows import StatementsOfCashFlows
+from twfrpumper.reports.financial_reports.sheet import Sheet
+from twfrpumper.reports.financial_reports.balance_sheet import BalanceSheet
+from twfrpumper.reports.financial_reports.comprehensive_income_sheet import ComprehensiveIncomeSheet
+from twfrpumper.reports.financial_reports.statements_of_cash_flows import StatementsOfCashFlows
 
 
 class FinancialReport(object):

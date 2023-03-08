@@ -1,7 +1,7 @@
 import pandas as pd
 
-from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
-from twfr_pumper.reports.financial_reports.fr_pool import FRPool
+from twfrpumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
+from twfrpumper.reports.financial_reports.fr_pool import FRPool
 
 
 def try_run():

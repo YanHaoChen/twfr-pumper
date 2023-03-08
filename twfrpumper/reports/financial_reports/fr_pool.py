@@ -5,8 +5,8 @@ import logging
 import pandas as pd
 import plotly.express as px
 
-from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
-from twfr_pumper.reports.financial_reports.financial_report_agent import FinancialReport
+from twfrpumper.reports.financial_reports.financial_report_agent import FinancialReportAgent
+from twfrpumper.reports.financial_reports.financial_report_agent import FinancialReport
 
 
 @dataclass
