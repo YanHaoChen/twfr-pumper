@@ -95,13 +95,13 @@ class MonthlyRevenueAgent(object):
             market=market
         )
 
-    def get_last_month_report(self):
+    def get_last_month_report(self, market=MarketType.LISTED_STOCK):
         if self.today.month == 1:
             year, mon = (self.today.year - 1, 12)
         else:
             year, mon = (self.today.year, self.today.month - 1)
 
-        return self.get_report_df(year, mon)
+        return self.get_report(year, mon, market)
 
 
 if __name__ == "__main__":

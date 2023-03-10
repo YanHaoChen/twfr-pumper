@@ -160,14 +160,14 @@ class FRPool(object):
         self.__cal_metrics_and_to_df()
 
     def save_as_csv(self, file_path):
-        folders = path.dirname()
+        folders = path.dirname(file_path)
         makedirs(folders, exist_ok=True)
         self.report_df.to_csv(file_path, index=False)
 
     def load_csv(self, file_path: str):
         if path.exists(file_path) and file_path.endswith('.csv'):
-            loaded_df = pd.read_csv()
-
+            loaded_df = pd.read_csv(file_path)
+            loaded_df['y_and_s'] = loaded_df['y_and_s'].astype(str)
             if self.report_df:
                 self.report_df = self.report_df.append(pd.DataFrame(loaded_df), ignore_index=True)
                 self.report_df = self.report_df.drop_duplicates()
