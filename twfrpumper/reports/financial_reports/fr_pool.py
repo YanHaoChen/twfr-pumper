@@ -159,6 +159,9 @@ class FRPool(object):
 
         self.__cal_metrics_and_to_df()
 
+    def list_items(self):
+        return self.report_df[['item', 'zh', 'en']].drop_duplicates().values.tolist()
+
     def save_as_csv(self, file_path):
         folders = path.dirname(file_path)
         makedirs(folders, exist_ok=True)

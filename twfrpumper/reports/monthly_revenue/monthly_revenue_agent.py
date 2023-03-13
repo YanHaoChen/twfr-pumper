@@ -30,7 +30,7 @@ class MonthlyRevenueReport(object):
         return self.report_df['公司名稱'].unique().tolist()
 
     def get_company_list_by_industry(self, industry: str):
-        return self.report_df.loc[self.report_df['產業別'] == industry][['公司代號', '公司名稱']].values
+        return self.report_df.loc[self.report_df['產業別'] == industry][['公司代號', '公司名稱']].values.tolist()
 
     def get_company_df_by_industry(self, industry: str):
         return self.report_df.loc[self.report_df['產業別'] == industry]
