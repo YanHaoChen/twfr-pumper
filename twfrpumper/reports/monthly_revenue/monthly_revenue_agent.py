@@ -5,6 +5,8 @@ from os import makedirs
 from datetime import date
 from enum import Enum
 from typing import Union
+import time
+import random
 
 import pandas as pd
 
@@ -20,8 +22,14 @@ class MonthlyRevenueReport(object):
     def __init__(self, year, month, report_df, market: MarketType):
         self.year = year
         self.month = month
+        self.str_y_and_m = f'{year} * 100 + {month}'
         self.report_df = report_df
         self.market = market
+        self.add_new_cols()
+
+    def add_new_cols(self):
+        self.report_df = self.report_df.assign(y_and_m=self.str_y_and_m)
+        self.report_df = self.report_df.assign(market_type=self.market)
 
     def get_industry_list(self):
         return self.report_df['產業別'].unique().tolist()
@@ -49,6 +57,12 @@ class MonthlyRevenueReport(object):
         except IndexError:
             return None
 
+    def __hash__(self):
+        return hash(f'{self.year}{self.month}{self.market}')
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
 
 class MonthlyRevenueAgent(object):
     FILE_PATH_MAPPING = {
@@ -56,7 +70,9 @@ class MonthlyRevenueAgent(object):
         MarketType.OTC_MARKET: '/t21/otc/'
     }
 
-    def __init__(self, file_folder="./tmp/monthly_revenue"):
+    def __init__(self, delay_initial=1, delay_max=3, file_folder="./tmp/monthly_revenue"):
+        self.delay_initial = delay_initial
+        self.delay_max = delay_max
         self.file_folder = file_folder
         self.today = date.today()
         if not (exists(self.file_folder) and isdir(self.file_folder)):
@@ -88,6 +104,7 @@ class MonthlyRevenueAgent(object):
             else:
                 return None
 
+        time.sleep(random.randint(self.delay_initial, self.delay_max))
         return MonthlyRevenueReport(
             year=year,
             month=month,
