@@ -65,7 +65,7 @@ class FinancialReportAgent(object):
                 f'SSEASON={season}&'
                 f'REPORT_ID={report_type}')
             resp.encoding = 'big5'
-            content = resp.text
+            content = resp.text.replace('�', '|?|')
             time.sleep(random.randint(self.delay_initial, self.delay_max))
             soup = BeautifulSoup(content, 'html.parser')
             company_name_dom = soup.find('ix:nonnumeric').find_next_sibling('ix:nonnumeric')
