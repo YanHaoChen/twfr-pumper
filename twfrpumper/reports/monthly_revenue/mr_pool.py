@@ -9,6 +9,15 @@ from twfrpumper.reports.monthly_revenue.monthly_revenue_agent import MonthlyReve
 from twfrpumper.reports.monthly_revenue.monthly_revenue_agent import MonthlyRevenueReport
 from twfrpumper.reports.monthly_revenue.monthly_revenue_agent import MarketType
 
+ITEM_ZH_MAPPING = {
+    'operating_revenue': '營業收入-當月營收',
+    'or_prev_mon': '營業收入-上月營收',
+    'or_prev_year': '營業收入-去年當月營收',
+    'or_vs_pm': '營業收入-上月比較增減(%)',
+    'or_vs_py': '營業收入-去年同月增減(%)',
+    'acc_or': '累計營業收入-當月累計營收',
+    'acc_or_prev_year': '累計營業收入-去年累計營收',
+    'acc_or_vs_prev_year': '累計營業收入-前期比較增減(%)'}
 
 @dataclass
 class DFRecord:
@@ -53,8 +62,22 @@ class MRPool(object):
         for i in range(1, len(list_r)):
             self.report_df = self.report_df.append(list_r[i].report_df, ignore_index=True)
 
+    def draw(self, item, company_codes, title_lang=True):
+        title = item
+        if title_lang:
+            title = ITEM_ZH_MAPPING[item]
+
+        item_df = self.report_df[self.report_df.code.isin(company_codes)].sort_values(by=['y_and_m'])
+
+        fig = px.line(item_df,
+                      x='y_and_m',
+                      y=item,
+                      color='company_name',
+                      title=title)
+        fig.show()
+
 
 if __name__ == "__main__":
     mr_pool = MRPool()
-    mr_pool.add_range_reports(2023, 1, 2023, 3)
+    mr_pool.add_range_reports(2023, 1, 2023, 6)
     mr_pool.organize_reports()

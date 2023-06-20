@@ -22,14 +22,26 @@ class MonthlyRevenueReport(object):
     def __init__(self, year, month, report_df, market: MarketType):
         self.year = year
         self.month = month
-        self.str_y_and_m = f'{year} * 100 + {month}'
+        self.str_y_and_m = f'{year * 100 + month}'
         self.report_df = report_df
         self.market = market
-        self.add_new_cols()
+        self.__add_new_cols()
 
-    def add_new_cols(self):
+    def __add_new_cols(self):
         self.report_df = self.report_df.assign(y_and_m=self.str_y_and_m)
         self.report_df = self.report_df.assign(market_type=self.market)
+        self.report_df["company_name"] = self.report_df['公司代號'].astype(str) + "-" + self.report_df['公司名稱']
+        self.report_df.rename(columns={
+            '公司代號': 'code',
+            '公司名稱': 'name',
+            '營業收入-當月營收': 'operating_revenue',
+            '營業收入-上月營收': 'or_prev_mon',
+            '營業收入-去年當月營收': 'or_prev_year',
+            '營業收入-上月比較增減(%)': 'or_vs_pm',
+            '營業收入-去年同月增減(%)': 'or_vs_py',
+            '累計營業收入-當月累計營收': 'acc_or',
+            '累計營業收入-去年累計營收': 'acc_or_prev_year',
+            '累計營業收入-前期比較增減(%)': 'acc_or_vs_prev_year'}, inplace=True)
 
     def get_industry_list(self):
         return self.report_df['產業別'].unique().tolist()
