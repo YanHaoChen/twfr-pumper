@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Union
 import time
 import random
+import logging
 
 import pandas as pd
 
@@ -32,6 +33,7 @@ class MonthlyRevenueReport(object):
         self.report_df = self.report_df.assign(market_type=self.market)
         self.report_df["company_name"] = self.report_df['公司代號'].astype(str) + "-" + self.report_df['公司名稱']
         self.report_df.rename(columns={
+            '產業別': 'industry',
             '公司代號': 'code',
             '公司名稱': 'name',
             '營業收入-當月營收': 'operating_revenue',
@@ -44,28 +46,28 @@ class MonthlyRevenueReport(object):
             '累計營業收入-前期比較增減(%)': 'acc_or_vs_prev_year'}, inplace=True)
 
     def get_industry_list(self):
-        return self.report_df['產業別'].unique().tolist()
+        return self.report_df['industry'].unique().tolist()
 
     def get_company_name_list(self):
-        return self.report_df['公司名稱'].unique().tolist()
+        return self.report_df['name'].unique().tolist()
 
     def get_company_list_by_industry(self, industry: str):
-        return self.report_df.loc[self.report_df['產業別'] == industry][['公司代號', '公司名稱']].values.tolist()
+        return self.report_df.loc[self.report_df['industry'] == industry][['code', 'name']].values.tolist()
 
     def get_company_df_by_industry(self, industry: str):
-        return self.report_df.loc[self.report_df['產業別'] == industry]
+        return self.report_df.loc[self.report_df['industry'] == industry]
 
     def check_industry_by_code(self, code: Union[int, str]) -> Union[str, None]:
         if isinstance(code, str):
             code = int(code)
         try:
-            return self.report_df.loc[self.report_df['公司代號'] == code]['產業別'].values[0]
+            return self.report_df.loc[self.report_df['code'] == code]['industry'].values[0]
         except IndexError:
             return None
 
     def check_industry_by_name(self, name: str) -> Union[str, None]:
         try:
-            return self.report_df.loc[self.report_df['公司名稱'] == name]['產業別'].values[0]
+            return self.report_df.loc[self.report_df['name'] == name]['industry'].values[0]
         except IndexError:
             return None
 
@@ -107,16 +109,27 @@ class MonthlyRevenueAgent(object):
                     'fileName': f't21sc03_{tw_year}_{month}.csv'
                 }
             )
+            time.sleep(random.randint(self.delay_initial, self.delay_max))
 
             resp.encoding = 'utf-8'
-            if resp.text[:2] == '﻿出':
+            resp_len = len(resp.text)
+            if resp.text[:2] == '﻿出' and resp_len > 136:
+                _, _, day = resp.text[136:147].strip('"').split('/')
                 for_pd_csv = io.StringIO(resp.content.decode('utf-8'))
-                with open(report_file_name, 'w') as f:
-                    f.write(resp.text)
+                if int(day) > 10:
+                    with open(report_file_name, 'w') as f:
+                        f.write(resp.text)
+                else:
+                    return MonthlyRevenueReport(
+                        year=year,
+                        month=month,
+                        report_df=pd.read_csv(for_pd_csv),
+                        market=market
+                    )
             else:
+                logging.warning(f"Can't get: {year}-{month} monthly report")
                 return None
 
-        time.sleep(random.randint(self.delay_initial, self.delay_max))
         return MonthlyRevenueReport(
             year=year,
             month=month,
@@ -135,7 +148,8 @@ class MonthlyRevenueAgent(object):
 
 if __name__ == "__main__":
     mr_agent = MonthlyRevenueAgent()
-    y2022_m12_mr = mr_agent.get_last_month_report()
-    print(y2022_m12_mr.get_industry_mapping("食品工業"))
+    y2022_m12_mr = mr_agent.get_report(2023, 6)
+    print(y2022_m12_mr.report_df.head(1)['code'])
+    # print(y2022_m12_mr.get_industry_mapping("食品工業"))
     # print(y2022_m12_mr.head(1)['公司代號'])
     # print(y2022_m12_mr.loc[y2022_m12_mr['公司代號'] == 1101])

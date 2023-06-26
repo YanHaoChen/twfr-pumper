@@ -1,8 +1,5 @@
-from dataclasses import dataclass, asdict
-from os import makedirs, path
-import logging
+from dataclasses import dataclass
 
-import pandas as pd
 import plotly.express as px
 
 from twfrpumper.reports.monthly_revenue.monthly_revenue_agent import MonthlyRevenueAgent
@@ -19,6 +16,7 @@ ITEM_ZH_MAPPING = {
     'acc_or_prev_year': '累計營業收入-去年累計營收',
     'acc_or_vs_prev_year': '累計營業收入-前期比較增減(%)'}
 
+
 @dataclass
 class DFRecord:
     code: str
@@ -31,8 +29,8 @@ class DFRecord:
 
 
 class MRPool(object):
-    def __init__(self):
-        self.__agent = MonthlyRevenueAgent()
+    def __init__(self, delay_initial, delay_max):
+        self.__agent = MonthlyRevenueAgent(delay_initial=delay_initial, delay_max=delay_max)
         self.reports = set()
         self.organized_report = {}
         self.report_df = None
