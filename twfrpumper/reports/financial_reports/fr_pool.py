@@ -32,7 +32,7 @@ class FRPool(object):
         arr_for_df = []
         for code, reports in self.organized_report.items():
             for y_and_s, report in reports.items():
-                self.__cal_roa_and_roe(y_and_s, reports, report)
+                self.__cal_roa_and_roe(y_and_s, reports, report, )
                 self.__cal_inventory_turnover(y_and_s, reports, report)
                 self.__cal_dbr(report)
                 self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
@@ -44,7 +44,7 @@ class FRPool(object):
             self.report_df = pd.DataFrame(arr_for_df)
 
     @staticmethod
-    def __prepare_df_arr_for_balance_sheet(code, company_name, y_and_s, item, object_, arr_for_df):
+    def __prepare_df_arr_for_common(code, company_name, y_and_s, item, object_, arr_for_df):
         str_y_and_s = str(y_and_s)
         zh = object_['zh']
         en = object_['en']
@@ -124,12 +124,12 @@ class FRPool(object):
     def __prepare_df_arr(self, code, y_and_s, reports, report, arr_for_df):
         company_name = f'{code}-{self.name_mapping[code]}'
         for item, object_ in report.items():
-            if '4000' < item:
-                self.__prepare_df_arr_for_balance_sheet(code, company_name, y_and_s, item, object_, arr_for_df)
-            elif '4000' <= item <= '9850':
+            if '4000' <= item <= '9850':
                 self.__prepare_df_arr_for_ci_sheet(code, company_name, y_and_s, reports, report, item, object_, arr_for_df)
             elif 'A00010' <= item <= 'E00210':
                 self.__prepare_df_arr_for_cash_flows(code, company_name, y_and_s, reports, item, object_, arr_for_df)
+            else:
+                self.__prepare_df_arr_for_common(code, company_name, y_and_s, item, object_, arr_for_df)
 
     def add_report(self, report: FinancialReport):
         if report:
@@ -210,6 +210,7 @@ class FRPool(object):
 
     @staticmethod
     def __cal_dbr(report):
+        print(213)
         report.update({
             'dbr': {
                 'zh': '負債比率',
@@ -217,6 +218,7 @@ class FRPool(object):
                 'values': [round((report['2XXX']['values'][0] / report['1XXX']['values'][0]) * 100, 2)]
             }
         })
+        print(report['dbr'])
 
     @staticmethod
     def __cal_roa_and_roe(y_and_s, reports, report):
