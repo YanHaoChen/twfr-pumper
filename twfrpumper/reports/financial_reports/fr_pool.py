@@ -210,7 +210,6 @@ class FRPool(object):
 
     @staticmethod
     def __cal_dbr(report):
-        print(213)
         report.update({
             'dbr': {
                 'zh': '負債比率',
@@ -218,7 +217,6 @@ class FRPool(object):
                 'values': [round((report['2XXX']['values'][0] / report['1XXX']['values'][0]) * 100, 2)]
             }
         })
-        print(report['dbr'])
 
     @staticmethod
     def __cal_roa_and_roe(y_and_s, reports, report):
