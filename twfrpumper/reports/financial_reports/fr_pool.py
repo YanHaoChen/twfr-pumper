@@ -32,8 +32,8 @@ class FRPool(object):
         arr_for_df = []
         for code, reports in self.organized_report.items():
             for y_and_s, report in reports.items():
-                self.__cal_roa_and_roe(y_and_s, reports, report, )
-                self.__cal_inventory_turnover(y_and_s, reports, report)
+                self.__special_case_for_season_4(y_and_s, reports, report)
+                self.__special_case_for_season_1_and_4(y_and_s, reports, report)
                 self.__cal_dbr(report)
                 self.__prepare_df_arr(code, y_and_s, reports, report, arr_for_df)
 
@@ -209,6 +209,67 @@ class FRPool(object):
         self.report_df = self.report_df.append(new_item, ignore_index=True)
 
     @staticmethod
+    def __special_case_for_season_4(y_and_s, reports, report):
+        if y_and_s % 10 == 4:  # season 4
+            ex_y_and_s = y_and_s - 1
+            if ex_y_and_s not in reports:
+                return
+            ex_report = reports[ex_y_and_s]
+
+            ex_gross_profit = ex_report['5900']['values'][2]
+            s_gross_profit = report['5900']['values'][0] - ex_gross_profit
+
+            ex_total_operating_revenue = ex_report['4000']['values'][2]
+            s_total_operating_revenue = report['4000']['values'][0] - ex_total_operating_revenue
+
+            ex_net_operating_income = ex_report['6900']['values'][2]
+            s_net_operating_income = report['6900']['values'][0] - ex_net_operating_income
+
+            ex_profit = ex_report['8200']['values'][2]
+            s_profit = report['8200']['values'][0] - ex_profit
+        else:
+            s_total_operating_revenue = report['4000']['values'][0]
+            s_gross_profit = report['5900']['values'][0]
+            s_net_operating_income = report['6900']['values'][0]
+            s_profit = report['8200']['values'][0]
+
+        s_total_asset = report['1XXX']['values'][0]
+        s_total_equity = report['3XXX']['values'][0]
+        s_roa = round((s_profit / s_total_asset) * 100, 2)
+        s_roe = round((s_profit / s_total_equity) * 100, 2)
+        s_gross_margin = round((s_gross_profit / s_total_operating_revenue) * 100, 2)
+        s_operating_margin = round((s_net_operating_income / s_total_operating_revenue) * 100, 2)
+        s_net_profit_margin = round((s_profit / s_total_operating_revenue) * 100, 2)
+
+        report.update({
+            's_roa': {
+                'zh': 'ROA(季)',
+                'en': 'ROA(Season)',
+                'values': [s_roa]
+            },
+            's_roe': {
+                'zh': 'ROE(季)',
+                'en': 'ROE(Season)',
+                'values': [s_roe]
+            },
+            's_gross_margin': {
+                'zh': '毛利率(季)',
+                'en': 'Gross Margin(Season)',
+                'values': [s_gross_margin]
+            },
+            's_operating_margin': {
+                'zh': '營業利益率(季)',
+                'en': 'Operating Margin(Season)',
+                'values': [s_operating_margin]
+            },
+            's_net_profit_margin': {
+                'zh': '淨利率(季)',
+                'en': 'Net Profit Margin(Season)',
+                'values': [s_net_profit_margin]
+            },
+        })
+
+    @staticmethod
     def __cal_dbr(report):
         report.update({
             'dbr': {
@@ -219,36 +280,7 @@ class FRPool(object):
         })
 
     @staticmethod
-    def __cal_roa_and_roe(y_and_s, reports, report):
-        if y_and_s % 10 == 4:  # season 4
-            ex_y_and_s = y_and_s - 1
-            if ex_y_and_s not in reports:
-                return
-            ex_report = reports[ex_y_and_s]
-            ex_profit = ex_report['8200']['values'][2]
-            s_profit = report['8200']['values'][0] - ex_profit
-        else:
-            s_profit = report['8200']['values'][0]
-
-        s_total_asset = report['1XXX']['values'][0]
-        s_total_equity = report['3XXX']['values'][0]
-        s_roa = round((s_profit / s_total_asset) * 100, 2)
-        s_roe = round((s_profit / s_total_equity) * 100, 2)
-        report.update({
-            's_roa': {
-                'zh': 's_roa',
-                'en': 's_roa',
-                'values': [s_roa]
-            },
-            's_roe': {
-                'zh': 's_roe',
-                'en': 's_roe',
-                'values': [s_roe]
-            }
-        })
-
-    @staticmethod
-    def __cal_inventory_turnover(y_and_s, reports, report):
+    def __special_case_for_season_1_and_4(y_and_s, reports, report):
         ex_y_and_s = y_and_s - 1 if y_and_s % 10 != 1 else y_and_s - 7
         if ex_y_and_s not in reports.keys():
             return
@@ -283,7 +315,7 @@ class FRPool(object):
 
 if __name__ == '__main__':
     pool = FRPool()
-    pool.add_range_reports("2605", "C", 2020, 1, 2022, 3)
+    pool.add_range_reports("2605", "C", 2020, 1, 2021, 4)
     pool.organize_reports()
 
 
