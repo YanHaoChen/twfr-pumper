@@ -287,18 +287,18 @@ class FRPool(object):
 
         ex_s_report = reports[ex_y_and_s]
         curr_inventories = report['130X']['values'][0]
-        ex_s_curr_inv = ex_s_report['130X']['values'][0]
+        ex_s_curr_inv = ex_s_report['130X']['values'][0] if '130X' in ex_s_report else 0
         avg_inv = (curr_inventories + ex_s_curr_inv) / 2
 
         if y_and_s % 10 == 4:
             curr_toc = report['5000']['values'][0]
-            ex_s_acc_toc = ex_s_report['5000']['values'][2]
+            ex_s_acc_toc = ex_s_report['5000']['values'][2] if '5000' in ex_s_report else 0
             s_total_operating_costs = curr_toc - ex_s_acc_toc
         else:
             s_total_operating_costs = report['5000']['values'][0]
 
-        s_it = round(s_total_operating_costs / avg_inv, 2)
-        s_it_days = round(90 / s_it, 2)
+        s_it = round(s_total_operating_costs / avg_inv, 2) if avg_inv else 0
+        s_it_days = round(90 / s_it, 2) if s_it else 0
         report.update({
             's_it': {
                 'zh': 's_it',
