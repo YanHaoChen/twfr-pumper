@@ -206,7 +206,7 @@ class FRPool(object):
         if self.report_df[(self.report_df.item == item_name)].size:
             self.report_df = self.report_df.drop(self.report_df[self.report_df.item == item_name].index)
 
-        self.report_df = self.report_df.append(new_item, ignore_index=True)
+        self.report_df = pd.concat([self.report_df, new_item], ignore_index=True)
 
     @staticmethod
     def __special_case_for_season_4(y_and_s, reports, report):

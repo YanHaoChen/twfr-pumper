@@ -2,7 +2,8 @@ import requests
 import io
 from os.path import exists, isdir, join
 from os import makedirs
-from datetime import date
+from datetime import date, datetime, timedelta
+
 from enum import Enum
 from typing import Union
 import time
@@ -114,9 +115,14 @@ class MonthlyRevenueAgent(object):
             resp.encoding = 'utf-8'
             resp_len = len(resp.text)
             if resp.text[:2] == '﻿出' and resp_len > 136:
-                _, _, day = resp.text[136:147].strip('"').split('/')
+                _, _, rp_day = resp.text[136:147].strip('"').split('/')
+                rp_date_str = f'{DateTool.tw_year_to_year(int(tw_year))}/{month}/{rp_day}'
+                rp_date = datetime.strptime(rp_date_str, f"%Y/%m/%d")
+                today_datetime = datetime.combine(self.today, datetime.min.time())
+
                 for_pd_csv = io.StringIO(resp.content.decode('utf-8'))
-                if int(day) > 10:
+
+                if today_datetime > rp_date + timedelta(days=11):
                     with open(report_file_name, 'w') as f:
                         f.write(resp.text)
                 else:

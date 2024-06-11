@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import pandas as pd
 import plotly.express as px
 
 from twfrpumper.reports.monthly_revenue.monthly_revenue_agent import MonthlyRevenueAgent
@@ -58,7 +59,8 @@ class MRPool(object):
             return None
         self.report_df = list_r[0].report_df
         for i in range(1, len(list_r)):
-            self.report_df = self.report_df.append(list_r[i].report_df, ignore_index=True)
+            self.report_df = pd.concat([self.report_df, list_r[i].report_df], ignore_index=True)
+
 
     def draw(self, item, company_codes, title_lang=True):
         title = item
@@ -76,6 +78,6 @@ class MRPool(object):
 
 
 if __name__ == "__main__":
-    mr_pool = MRPool()
-    mr_pool.add_range_reports(2023, 1, 2023, 6)
+    mr_pool = MRPool(5,10)
+    mr_pool.add_range_reports(2019, 1, 2019, 12)
     mr_pool.organize_reports()
