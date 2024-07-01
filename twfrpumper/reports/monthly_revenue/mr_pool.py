@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from typing import List
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objs as go
+import numpy as np
 
 from twfrpumper.reports.monthly_revenue.monthly_revenue_agent import MonthlyRevenueAgent
 from twfrpumper.reports.monthly_revenue.monthly_revenue_agent import MonthlyRevenueReport
@@ -76,6 +79,42 @@ class MRPool(object):
                       title=title)
         fig.show()
 
+    def overview(self, aggfunc: str='sum', only_positive=False) -> List:
+        overview = self.report_df[['industry', 'operating_revenue', 'y_and_m']]
+
+        item_df = overview.sort_values(by=['y_and_m'])
+        pivot_item_df = pd.pivot_table(item_df,
+                      values='operating_revenue',
+                      index='y_and_m',
+                      columns='industry',
+                      aggfunc=aggfunc)
+        fig = go.Figure()
+
+        industries_slope_intercept = []
+
+        for industry in pivot_item_df.columns:
+            x_seq = np.arange(pivot_item_df[industry].size)
+            slope, intercept = np.polyfit(x_seq, pivot_item_df[industry].values, 1)
+
+            if slope <= 0 and only_positive:
+                continue
+
+            fig.add_trace(go.Scatter(x=pivot_item_df.index, y=pivot_item_df[industry].values,
+                                     name = industry,
+                                     mode = 'markers+lines',
+                                     line=dict(shape='linear'),
+                                     connectgaps=True))
+
+            industries_slope_intercept.append({
+                'name': industry,
+                'slope': slope,
+                'intercept': intercept
+            })
+            
+        fig.update_layout(title = "Overview for All Industries")
+        fig.show()
+        return sorted(industries_slope_intercept, key=lambda industry: industry['slope'], reverse=True)
+    
 
 if __name__ == "__main__":
     mr_pool = MRPool(5,10)

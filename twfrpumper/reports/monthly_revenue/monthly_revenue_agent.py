@@ -96,7 +96,7 @@ class MonthlyRevenueAgent(object):
     def get_report(self, year, month, market=MarketType.LISTED_STOCK):
         for_pd_csv = None
         tw_year = DateTool.to_tw_year(year)
-        report_file_name = join(self.file_folder, f'monthly_revenue_{year}_{month}.html')
+        report_file_name = join(self.file_folder, f'monthly_revenue_{year}_{month}_{market.value}.html')
 
         if exists(report_file_name):
             for_pd_csv = report_file_name
@@ -122,7 +122,7 @@ class MonthlyRevenueAgent(object):
 
                 for_pd_csv = io.StringIO(resp.content.decode('utf-8'))
 
-                if today_datetime > rp_date + timedelta(days=11):
+                if today_datetime > rp_date + timedelta(days=30):
                     with open(report_file_name, 'w') as f:
                         f.write(resp.text)
                 else:
